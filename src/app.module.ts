@@ -32,7 +32,12 @@ import { UsersModule } from './users/users.module';
       password: process.env.DB_PASS,
       database: process.env.DB_NAME,
       autoLoadEntities: true,
-      synchronize: true,
+      synchronize: false,
+
+      // ✅ REQUIRED FOR NEON
+      ssl: {
+        rejectUnauthorized: false,
+      },
     }),
     AuthModule,
     AuditModule,
