@@ -32,7 +32,7 @@ export class UsersService {
     // PAGINATION
     qb.skip((page - 1) * limit).take(limit);
 
-    qb.select(['user.id', 'user.email', 'user.role', 'user.createdAt']);
+    qb.select(['user.publicId', 'user.email', 'user.role', 'user.createdAt']);
 
     qb.orderBy('user.createdAt', 'DESC');
 

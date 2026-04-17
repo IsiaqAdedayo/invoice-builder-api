@@ -8,7 +8,7 @@ export class RbacDomain {
 
     if (user.role === 'accountant') return;
 
-    if (user.role === 'customer' && invoice.customer.id !== user.userId) {
+    if (user.role === 'customer' && invoice.user.id !== user.id) {
       throw new ForbiddenException('Access denied');
     }
   }

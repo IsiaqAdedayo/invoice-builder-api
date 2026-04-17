@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-call */
 import { IsEmail, IsNotEmpty, IsPhoneNumber, IsString } from 'class-validator';
 
 export class CreateCustomerDto {
@@ -15,4 +14,8 @@ export class CreateCustomerDto {
   @IsNotEmpty()
   @IsPhoneNumber('NG')
   phone: string;
+
+  @IsString()
+  @IsNotEmpty()
+  address: string;
 }

@@ -1,5 +1,6 @@
 import { Invoice } from 'src/invoices/entities/invoice.entity';
 import {
+  BeforeInsert,
   Column,
   CreateDateColumn,
   Entity,
@@ -7,20 +8,32 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { v4 as uuid } from 'uuid';
 
 @Entity()
 export class Customer {
   @PrimaryGeneratedColumn()
   id: number;
 
+  @Column({ unique: true })
+  publicId: string;
+
+  @BeforeInsert()
+  generatePublicId() {
+    this.publicId = `cust_${uuid()}`;
+  }
+
   @Column()
   name: string;
 
-  @Column()
+  @Column({ nullable: true })
   email: string;
 
-  @Column()
+  @Column({ nullable: true })
   phone: string;
+
+  @Column({ nullable: true })
+  address: string;
 
   @CreateDateColumn()
   createdAt: Date;

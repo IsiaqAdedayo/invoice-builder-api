@@ -1,20 +1,31 @@
 import { Customer } from 'src/customers/entities/customer.entity';
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  ManyToOne,
-  CreateDateColumn,
-  OneToMany,
-} from 'typeorm';
-import { InvoiceItem } from './invoice-item.entity/invoice-item.entity';
-import { InvoiceStatus } from '../dto/create-invoice.dto';
 import { Payment } from 'src/payments/entities/payment.entity';
+import { User } from 'src/users/entities/user.entity';
+import {
+  BeforeInsert,
+  Column,
+  CreateDateColumn,
+  Entity,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+import { InvoiceStatus } from '../dto/create-invoice.dto';
+import { InvoiceItem } from './invoice-item.entity/invoice-item.entity';
+import { v4 as uuid } from 'uuid';
 
 @Entity()
 export class Invoice {
   @PrimaryGeneratedColumn()
   id: number;
+
+  @Column({ unique: true })
+  publicId: string;
+
+  @BeforeInsert()
+  generatePublicId() {
+    this.publicId = `inv_${uuid()}`;
+  }
 
   @Column({
     type: 'decimal',
@@ -57,4 +68,7 @@ export class Invoice {
 
   @OneToMany(() => Payment, (payment) => payment.invoice)
   payments: Payment[];
+
+  @ManyToOne(() => User, (user) => user.invoices)
+  user: User;
 }

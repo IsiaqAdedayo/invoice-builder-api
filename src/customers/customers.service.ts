@@ -20,7 +20,7 @@ export class CustomersService {
     return this.customerRepo.find();
   }
 
-  findOne(id: number) {
-    return this.customerRepo.findOne({ where: { id } });
+  findOne(publicId: string) {
+    return this.customerRepo.findOne({ where: { publicId } });
   }
 }

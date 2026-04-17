@@ -38,8 +38,8 @@ export class InvoicesController {
   }
 
   @Patch(':id/status')
-  updateStatus(@Param('id') id: number, @Body('status') status: InvoiceStatus) {
-    return this.invoicesService.updateStatus(+id, status);
+  updateStatus(@Param('id') id: string, @Body('status') status: InvoiceStatus) {
+    return this.invoicesService.updateStatus(id, status);
   }
 
   @Get()
@@ -48,7 +48,7 @@ export class InvoicesController {
   }
 
   @Get(':id/pdf')
-  async getPdf(@Param('id') id: number, @Res() res: Response) {
+  async getPdf(@Param('id') id: string, @Res() res: Response) {
     const pdfBuffer = await this.invoicesService.generateInvoicePdf(id);
 
     res.set({
@@ -60,12 +60,12 @@ export class InvoicesController {
   }
 
   @Post(':id/pay')
-  payInvoice(@Param('id') id: number, @Body('amount') amount: number) {
+  payInvoice(@Param('id') id: string, @Body('amount') amount: number) {
     return this.invoicesService.processPayment(id, amount);
   }
 
   @Post(':id/refund')
-  refund(@Param('id') id: number) {
+  refund(@Param('id') id: string) {
     return this.invoicesService.refundInvoice(id);
   }
 }

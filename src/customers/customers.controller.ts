@@ -3,13 +3,15 @@ import {
   Controller,
   Get,
   Param,
-  ParseIntPipe,
   Post,
+  UseGuards,
   ValidationPipe,
 } from '@nestjs/common';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { CustomersService } from './customers.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 
+@UseGuards(JwtAuthGuard)
 @Controller('customers')
 export class CustomersController {
   constructor(private readonly customersService: CustomersService) {}
@@ -25,7 +27,7 @@ export class CustomersController {
   }
 
   @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.customersService.findOne(id);
+  findOne(@Param('id') publicId: string) {
+    return this.customersService.findOne(publicId);
   }
 }

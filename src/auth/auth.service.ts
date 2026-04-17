@@ -13,7 +13,7 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  async register(dto: { email: string; password: string }) {
+  async register(dto: { email: string; password: string; role: string }) {
     const existing = await this.userRepo.findOne({
       where: { email: dto.email },
     });
@@ -27,6 +27,7 @@ export class AuthService {
     const user = this.userRepo.create({
       email: dto.email,
       password: hashedPassword,
+      role: dto.role || 'user',
     });
 
     return this.userRepo.save(user);
@@ -54,6 +55,7 @@ export class AuthService {
       access_token: this.jwtService.sign({
         sub: user.id,
         email: user.email,
+        role: user.role,
       }),
     };
   }

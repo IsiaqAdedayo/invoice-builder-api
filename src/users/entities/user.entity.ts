@@ -1,14 +1,17 @@
+import { Invoice } from 'src/invoices/entities/invoice.entity';
 import {
+  BeforeInsert,
   Column,
-  CreateDateColumn,
   Entity,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
+import { v4 as uuid } from 'uuid';
 
-@Entity()
+@Entity('users')
 export class User {
   @PrimaryGeneratedColumn()
-  id: number;
+  id: number; // internal
 
   @Column({ unique: true })
   email: string;
@@ -16,12 +19,17 @@ export class User {
   @Column()
   password: string;
 
-  @Column()
+  @Column({ default: 'user' })
   role: string;
 
-  @Column()
-  userId: number;
+  @Column({ unique: true, nullable: true })
+  publicId: string; // external
 
-  @CreateDateColumn()
-  createdAt: Date;
+  @OneToMany(() => Invoice, (invoice) => invoice.customer)
+  invoices: Invoice[];
+
+  @BeforeInsert()
+  generatePublicId() {
+    this.publicId = `usr_${uuid()}`;
+  }
 }

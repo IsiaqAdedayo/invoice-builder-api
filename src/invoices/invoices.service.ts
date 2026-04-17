@@ -5,13 +5,13 @@ import { PdfService } from 'src/pdf/pdf.service';
 import { DataSource, Repository } from 'typeorm';
 
 import { AuditService } from 'src/audit/audit.service';
+import { MailService } from 'src/mail/mail.service';
 import { Payment } from 'src/payments/entities/payment.entity';
 import { InvoiceCalculator } from './domain/invoice-calculator';
 import { InvoiceDomain } from './domain/invoice.domain';
 import { CreateInvoiceDto, InvoiceStatus } from './dto/create-invoice.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
 import { Invoice } from './entities/invoice.entity';
-import { MailService } from 'src/mail/mail.service';
 
 @Injectable()
 export class InvoicesService {
@@ -38,7 +38,7 @@ export class InvoicesService {
     const { customerId, items, status, discount, tax } = dto;
 
     const customer = await this.customerRepo.findOne({
-      where: { id: customerId },
+      where: { publicId: customerId },
     });
 
     if (!customer) {
@@ -78,7 +78,7 @@ export class InvoicesService {
     });
 
     return this.invoiceRepo.findOne({
-      where: { id: saved.id },
+      where: { publicId: saved.publicId },
       relations: ['customer', 'items'],
     });
   }
@@ -86,9 +86,9 @@ export class InvoicesService {
   // ----------------------------
   // UPDATE INVOICE (STRICT RULES)
   // ----------------------------
-  async updateInvoice(invoiceId: number, dto: UpdateInvoiceDto) {
+  async updateInvoice(invoicePublicId: string, dto: UpdateInvoiceDto) {
     const invoice = await this.invoiceRepo.findOne({
-      where: { id: invoiceId },
+      where: { publicId: invoicePublicId },
       relations: ['items', 'customer'],
     });
 
@@ -126,9 +126,9 @@ export class InvoicesService {
   // ----------------------------
   // STATUS TRANSITION
   // ----------------------------
-  async updateStatus(invoiceId: number, status: InvoiceStatus) {
+  async updateStatus(invoicePublicId: string, status: InvoiceStatus) {
     const invoice = await this.invoiceRepo.findOne({
-      where: { id: invoiceId },
+      where: { publicId: invoicePublicId },
     });
 
     if (!invoice) {
@@ -171,9 +171,9 @@ export class InvoicesService {
   // ----------------------------
   // PDF
   // ----------------------------
-  async generateInvoicePdf(id: number) {
+  async generateInvoicePdf(publicId: string) {
     const invoice = await this.invoiceRepo.findOne({
-      where: { id },
+      where: { publicId },
       relations: ['customer', 'items'],
     });
 
@@ -196,13 +196,13 @@ export class InvoicesService {
   // ----------------------------
   // PROCESS PAYMENT
   // ----------------------------
-  async processPayment(invoiceId: number, amount: number) {
+  async processPayment(invoicePublicId: string, amount: number) {
     const result = await this.dataSource.transaction(async (manager) => {
       const invoiceRepo = manager.getRepository(Invoice);
       const paymentRepo = manager.getRepository(Payment);
 
       const invoice = await invoiceRepo.findOne({
-        where: { id: invoiceId },
+        where: { publicId: invoicePublicId },
         relations: ['customer', 'items', 'payments'],
       });
 
@@ -238,14 +238,23 @@ export class InvoicesService {
     // ----------------------------
 
     const fullInvoice = await this.invoiceRepo.findOne({
-      where: { id: result.invoice.id },
+      where: { publicId: result.invoice.publicId },
       relations: ['customer', 'items'],
     });
 
     if (fullInvoice) {
-      const pdf = await this.pdfService.generateInvoicePdf(fullInvoice);
+      void (async () => {
+        try {
+          const pdf = await this.pdfService.generateInvoicePdf(fullInvoice);
 
-      await this.mailService.sendInvoiceEmail(fullInvoice.customer.email, pdf);
+          await this.mailService.sendInvoiceEmail(
+            fullInvoice.customer.email,
+            pdf,
+          );
+        } catch (err) {
+          console.error('Automation failed:', err);
+        }
+      })();
     }
 
     await this.auditService.log({
@@ -264,13 +273,13 @@ export class InvoicesService {
   // ----------------------------
   // Refund Flow
   // ----------------------------
-  async refundInvoice(invoiceId: number) {
+  async refundInvoice(invoicePublicId: string) {
     return this.dataSource.transaction(async (manager) => {
       const invoiceRepo = manager.getRepository(Invoice);
       const paymentRepo = manager.getRepository(Payment);
 
       const invoice = await invoiceRepo.findOne({
-        where: { id: invoiceId },
+        where: { publicId: invoicePublicId },
         relations: ['payments'],
       });
 

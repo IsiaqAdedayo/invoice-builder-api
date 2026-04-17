@@ -1,15 +1,15 @@
-/* eslint-disable @typescript-eslint/no-unsafe-call */
 // create-invoice.dto.ts
 
+import { Type } from 'class-transformer';
 import {
   IsArray,
   IsEnum,
   IsNumber,
-  ValidateNested,
   IsOptional,
+  IsString,
   Min,
+  ValidateNested,
 } from 'class-validator';
-import { Type } from 'class-transformer';
 
 export enum InvoiceStatus {
   DRAFT = 'draft',
@@ -47,8 +47,8 @@ export class CreateInvoiceDto {
   @IsEnum(InvoiceStatus)
   status: InvoiceStatus;
 
-  @IsNumber()
-  customerId: number;
+  @IsString()
+  customerId: string;
 
   @IsArray()
   @ValidateNested({ each: true })
