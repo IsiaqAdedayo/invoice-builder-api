@@ -52,11 +52,16 @@ export class AuthService {
     }
 
     return {
-      access_token: this.jwtService.sign({
-        sub: user.id,
+      accessToken: this.jwtService.sign({
+        sub: user.publicId,
         email: user.email,
         role: user.role,
       }),
+      user: {
+        id: user.publicId,
+        email: user.email,
+        role: user.role,
+      },
     };
   }
 }
