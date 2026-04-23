@@ -4,6 +4,7 @@ import { Customer } from 'src/customers/entities/customer.entity';
 import { PdfService } from 'src/pdf/pdf.service';
 import { DataSource, Repository } from 'typeorm';
 
+import { format } from 'date-fns';
 import { AuditService } from 'src/audit/audit.service';
 import { MailService } from 'src/mail/mail.service';
 import { Payment } from 'src/payments/entities/payment.entity';
@@ -12,6 +13,15 @@ import { InvoiceDomain } from './domain/invoice.domain';
 import { CreateInvoiceDto, InvoiceStatus } from './dto/create-invoice.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
 import { Invoice } from './entities/invoice.entity';
+
+export interface InvoiceQuery {
+  status?: InvoiceStatus;
+  search?: string;
+  page?: number | string;
+  limit?: number | string;
+  sortBy?: string;
+  order?: 'ASC' | 'DESC';
+}
 
 @Injectable()
 export class InvoicesService {
@@ -30,6 +40,30 @@ export class InvoicesService {
 
     private readonly mailService: MailService,
   ) {}
+
+  // ----------------------------
+  // PRIVATE: format helper
+  // ----------------------------
+  private formatInvoice(invoice: Invoice) {
+    const suffix = invoice.publicId?.slice(-6).toUpperCase() ?? '??????';
+    return {
+      publicId: invoice.publicId,
+      id: `INV-${suffix}`,
+      customerName: invoice.customer?.name ?? '—',
+      customerEmail: invoice.customer?.email ?? '—',
+      totalAmount: Number(invoice.totalAmount),
+      amountFmt: `₦${Number(invoice.totalAmount).toLocaleString('en-NG')}`,
+      status: invoice.status,
+      issuedFmt: invoice.createdAt
+        ? format(new Date(invoice.createdAt), 'dd MMM yyyy')
+        : '—',
+      dueFmt: invoice.dueDate
+        ? format(new Date(invoice.dueDate), 'dd MMM yyyy')
+        : '—',
+      dueDate: invoice.dueDate ?? null,
+      createdAt: invoice.createdAt,
+    };
+  }
 
   // ----------------------------
   // CREATE INVOICE
@@ -185,12 +219,68 @@ export class InvoicesService {
   }
 
   // ----------------------------
-  // READ
+  // READ ALL (with search + pagination)
   // ----------------------------
-  findAll() {
-    return this.invoiceRepo.find({
+  async findAll(query: InvoiceQuery = {}) {
+    const page = Math.max(Number(query.page) || 1, 1);
+    const limit = Math.min(Number(query.limit) || 10, 50);
+    const order = query.order === 'ASC' ? 'ASC' : 'DESC';
+    const sortBy = query.sortBy ?? 'createdAt';
+
+    const qb = this.invoiceRepo
+      .createQueryBuilder('invoice')
+      .leftJoinAndSelect('invoice.customer', 'customer')
+      .leftJoinAndSelect('invoice.items', 'items');
+
+    if (query.status) {
+      qb.andWhere('invoice.status = :status', { status: query.status });
+    }
+
+    if (query.search) {
+      qb.andWhere(
+        '(customer.name ILIKE :search OR invoice.publicId ILIKE :search)',
+        { search: `%${query.search}%` },
+      );
+    }
+
+    const allowedSortColumns = [
+      'createdAt',
+      'totalAmount',
+      'status',
+      'dueDate',
+    ];
+    const sortColumn = allowedSortColumns.includes(sortBy)
+      ? `invoice.${sortBy}`
+      : 'invoice.createdAt';
+
+    qb.orderBy(sortColumn, order)
+      .skip((page - 1) * limit)
+      .take(limit);
+
+    const [raw, total] = await qb.getManyAndCount();
+
+    return {
+      data: raw.map((inv) => this.formatInvoice(inv)),
+      meta: {
+        total,
+        page,
+        limit,
+        lastPage: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  // ----------------------------
+  // RECENT INVOICES (dashboard table)
+  // ----------------------------
+  async findRecent(limit = 5) {
+    const invoices = await this.invoiceRepo.find({
       relations: ['customer', 'items'],
+      order: { createdAt: 'DESC' },
+      take: limit,
     });
+
+    return invoices.map((inv) => this.formatInvoice(inv));
   }
 
   // ----------------------------

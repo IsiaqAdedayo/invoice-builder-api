@@ -9,6 +9,7 @@ import {
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 import { InvoiceStatus } from '../dto/create-invoice.dto';
 import { InvoiceItem } from './invoice-item.entity/invoice-item.entity';
@@ -41,6 +42,12 @@ export class Invoice {
 
   @CreateDateColumn()
   createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
+
+  @Column({ nullable: true, type: 'timestamp' })
+  dueDate: Date;
 
   @ManyToOne(() => Customer, (customer) => customer.invoices, {
     onDelete: 'CASCADE',

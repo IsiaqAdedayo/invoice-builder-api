@@ -30,4 +30,14 @@ export class CustomersController {
   findOne(@Param('id') publicId: string) {
     return this.customersService.findOne(publicId);
   }
+
+  /**
+   * GET /customers/:id/invoices
+   * Returns all invoices scoped to this customer.
+   * ⚠️ In production: verify req.user.customerId === id before serving.
+   */
+  @Get(':id/invoices')
+  findCustomerInvoices(@Param('id') customerId: string) {
+    return this.customersService.findCustomerInvoices(customerId);
+  }
 }
